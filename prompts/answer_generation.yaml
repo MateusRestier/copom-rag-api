@@ -1,0 +1,17 @@
+# Custom prompt overrides for answer generation.
+# These values replace the Python defaults in src/copom_rag/prompts/templates.py.
+# To activate this file, set COPOM_PROMPTS_FILE=prompts/answer_generation.yaml in .env.
+#
+# Uncomment and edit the entries you want to override.
+
+# answer_generation_system: |
+#   Você é um especialista em política monetária brasileira...
+
+# answer_generation_template: |
+#   ## Pergunta
+#   {question}
+#
+#   ## Contexto
+#   {context}
+#
+#   Responda de forma objetiva...

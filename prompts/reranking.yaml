@@ -1,0 +1,8 @@
+# Custom prompt overrides for LLM reranking.
+# Uncomment and edit to override the Python defaults.
+
+# reranking_system: |
+#   Você é um assistente especializado em política monetária brasileira...
+
+# reranking_template: |
+#   Avalie a relevância de cada trecho...

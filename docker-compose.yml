@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: copom_pgvector
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: copom
+      POSTGRES_PASSWORD: copom
+      POSTGRES_DB: copom_rag
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U copom -d copom_rag"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  copom-rag-api:
+    build: .
+    container_name: copom_rag_api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      # Override DATABASE_URL to use the Docker service name instead of localhost
+      DATABASE_URL: postgresql://copom:copom@postgres:5432/copom_rag
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgvector_data:
