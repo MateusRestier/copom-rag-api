@@ -1,5 +1,8 @@
 """Google Gemini embedding and LLM providers.
 
+Uses the current google-genai SDK (google.genai), which replaced the
+deprecated google-generativeai package.
+
 Embedding model : text-embedding-004 (768 dims, multilingual, Portuguese-capable)
 LLM model       : gemini-1.5-flash (configurable via GEMINI_LLM_MODEL)
 
@@ -22,9 +25,9 @@ from copom_rag.providers.factory import register_embedding_provider, register_ll
 logger = logging.getLogger(__name__)
 
 
-def _configure_genai():
-    """Configure the Gemini SDK with the API key. Raises if key is missing."""
-    import google.generativeai as genai  # type: ignore
+def _make_client():
+    """Create and return a google.genai Client. Raises if API key is missing."""
+    from google import genai  # type: ignore
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -32,13 +35,12 @@ def _configure_genai():
             "GEMINI_API_KEY environment variable is not set. "
             "Set it in your .env file."
         )
-    genai.configure(api_key=api_key)
-    return genai
+    return genai.Client(api_key=api_key)
 
 
 @register_embedding_provider("gemini")
 class GeminiEmbeddingProvider(EmbeddingProvider):
-    """Embedding provider backed by the Google Gemini API.
+    """Embedding provider backed by the Google Gemini API (google-genai SDK).
 
     Model: text-embedding-004 (768 dimensions).
     MUST match the model used by copom-vector-pipeline during ingestion.
@@ -48,30 +50,25 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
     _DIMENSIONS = 768
 
     def __init__(self) -> None:
-        self._genai = _configure_genai()
+        self._client = _make_client()
         self._model = os.environ.get("GEMINI_EMBEDDING_MODEL", self._DEFAULT_MODEL)
 
     def embed_text(self, text: str) -> list[float]:
-        result = self._genai.embed_content(
+        result = self._client.models.embed_content(
             model=self._model,
-            content=text,
-            task_type="retrieval_query",  # query side (vs. retrieval_document in pipeline)
+            contents=text,
         )
-        return result["embedding"]
+        return list(result.embeddings[0].values)
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
         try:
-            result = self._genai.embed_content(
+            result = self._client.models.embed_content(
                 model=self._model,
-                content=texts,
-                task_type="retrieval_query",
+                contents=texts,
             )
-            embeddings = result["embedding"]
-            if texts and isinstance(embeddings[0], float):
-                return [embeddings]
-            return embeddings
+            return [list(e.values) for e in result.embeddings]
         except Exception:
             return [self.embed_text(t) for t in texts]
 
@@ -82,30 +79,24 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
 
 @register_llm_provider("gemini")
 class GeminiLLMProvider(LLMProvider):
-    """LLM provider backed by the Google Gemini API."""
+    """LLM provider backed by the Google Gemini API (google-genai SDK)."""
 
     _DEFAULT_MODEL = "gemini-1.5-flash"
 
     def __init__(self) -> None:
-        import google.generativeai as genai  # type: ignore
-        _configure_genai()
-        model_name = os.environ.get("GEMINI_LLM_MODEL", self._DEFAULT_MODEL)
-        self._model = genai.GenerativeModel(model_name)
+        self._client = _make_client()
+        self._model_name = os.environ.get("GEMINI_LLM_MODEL", self._DEFAULT_MODEL)
         self._temperature = float(os.environ.get("LLM_TEMPERATURE", "0.3"))
         self._max_tokens = int(os.environ.get("MAX_OUTPUT_TOKENS", "2048"))
 
     def generate(self, prompt: str, system: str | None = None) -> str:
-        """Generate a text response."""
-        import google.generativeai as genai  # type: ignore
+        from google.genai import types  # type: ignore
 
-        parts = []
-        if system:
-            parts.append(system + "\n\n")
-        parts.append(prompt)
-
-        response = self._model.generate_content(
-            "".join(parts),
-            generation_config=genai.types.GenerationConfig(
+        contents = (system + "\n\n" + prompt) if system else prompt
+        response = self._client.models.generate_content(
+            model=self._model_name,
+            contents=contents,
+            config=types.GenerateContentConfig(
                 temperature=self._temperature,
                 max_output_tokens=self._max_tokens,
             ),
@@ -113,25 +104,17 @@ class GeminiLLMProvider(LLMProvider):
         return response.text.strip()
 
     def generate_json(self, prompt: str, system: str | None = None) -> dict:
-        """Generate a response and parse it as JSON.
-
-        Strips markdown code fences (```json ... ```) before parsing,
-        mirroring the robustness pattern from rag-framework's
-        AzureOpenAIAdapter._parse_json_response.
-        """
         raw = self.generate(prompt, system=system)
         return self._parse_json(raw)
 
     @staticmethod
     def _parse_json(text: str) -> dict:
-        # Strip markdown code fences if present
         text = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
         text = re.sub(r"\s*```$", "", text.strip(), flags=re.MULTILINE)
         text = text.strip()
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            # Last-resort: extract the first {...} block
             match = re.search(r"\{.*\}", text, re.DOTALL)
             if match:
                 try:
