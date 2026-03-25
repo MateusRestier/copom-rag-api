@@ -3,12 +3,12 @@
 Uses the current google-genai SDK (google.genai), which replaced the
 deprecated google-generativeai package.
 
-Embedding model : text-embedding-004 (768 dims, multilingual, Portuguese-capable)
+Embedding model : gemini-embedding-001 (3072 dims, multilingual, Portuguese-capable)
 LLM model       : gemini-1.5-flash (configurable via GEMINI_LLM_MODEL)
 
 Required env vars:
     GEMINI_API_KEY          — your Google AI API key
-    GEMINI_EMBEDDING_MODEL  — (optional) defaults to models/text-embedding-004
+    GEMINI_EMBEDDING_MODEL  — (optional) defaults to models/gemini-embedding-001
     GEMINI_LLM_MODEL        — (optional) defaults to gemini-1.5-flash
 """
 
@@ -46,17 +46,22 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
     MUST match the model used by copom-vector-pipeline during ingestion.
     """
 
-    _DEFAULT_MODEL = "models/text-embedding-004"
-    _DIMENSIONS = 768
+    _DEFAULT_MODEL = "models/gemini-embedding-001"
+    _DEFAULT_DIMENSIONS = 1536
 
     def __init__(self) -> None:
+        from google.genai import types as genai_types  # type: ignore
+
         self._client = _make_client()
         self._model = os.environ.get("GEMINI_EMBEDDING_MODEL", self._DEFAULT_MODEL)
+        self._dimensions = int(os.environ.get("EMBEDDING_DIMENSIONS", str(self._DEFAULT_DIMENSIONS)))
+        self._embed_config = genai_types.EmbedContentConfig(output_dimensionality=self._dimensions)
 
     def embed_text(self, text: str) -> list[float]:
         result = self._client.models.embed_content(
             model=self._model,
             contents=text,
+            config=self._embed_config,
         )
         return list(result.embeddings[0].values)
 
@@ -67,6 +72,7 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
             result = self._client.models.embed_content(
                 model=self._model,
                 contents=texts,
+                config=self._embed_config,
             )
             return [list(e.values) for e in result.embeddings]
         except Exception:
@@ -74,7 +80,7 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
 
     @property
     def dimensions(self) -> int:
-        return self._DIMENSIONS
+        return self._dimensions
 
 
 @register_llm_provider("gemini")
