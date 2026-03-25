@@ -4,7 +4,7 @@ Uses the current google-genai SDK (google.genai), which replaced the
 deprecated google-generativeai package.
 
 Embedding model : gemini-embedding-001 (3072 dims, multilingual, Portuguese-capable)
-LLM model       : gemini-1.5-flash (configurable via GEMINI_LLM_MODEL)
+LLM model       : gemini-2.5-flash (configurable via GEMINI_LLM_MODEL)
 
 Required env vars:
     GEMINI_API_KEY          — your Google AI API key
@@ -87,7 +87,7 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
 class GeminiLLMProvider(LLMProvider):
     """LLM provider backed by the Google Gemini API (google-genai SDK)."""
 
-    _DEFAULT_MODEL = "gemini-1.5-flash"
+    _DEFAULT_MODEL = "gemini-2.5-flash"
 
     def __init__(self) -> None:
         self._client = _make_client()
