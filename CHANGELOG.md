@@ -9,6 +9,29 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-03-26
+
+### Fixed
+- `POST /ask` now returns structured 503 responses instead of generic 500 errors:
+  - Gemini 429 / `RESOURCE_EXHAUSTED` → 503 with a Portuguese message explaining the
+    daily quota limit and expected reset time (midnight UTC).
+  - Database connection errors → 503 with a connection error message.
+  - Other unexpected errors → 500 with a generic Portuguese message.
+
+### Added
+- `DEPLOYMENT.md`: guide covering Render service configuration, environment variables,
+  database password rotation, UptimeRobot keep-alive setup, and troubleshooting.
+
+## [0.2.0] — 2026-03-25
+
+### Fixed
+- Inline citations now use `[1][2]` format (never `[1, 2]`).
+- `MAX_OUTPUT_TOKENS` increased to 8192 to prevent truncated answers.
+
+### Added
+- Answer generation prompt updated to require numbered inline citations referencing
+  context chunk indices — e.g. `"a taxa foi mantida em 14,75% a.a.[1]"`.
+
 ## [0.1.0] — 2026-03-25
 
 ### Added
