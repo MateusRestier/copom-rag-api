@@ -27,6 +27,8 @@ Cada trecho está identificado com um número entre colchetes, por exemplo [1], 
 - Responda à pergunta acima usando APENAS as informações do contexto fornecido.
 - Sempre que usar uma informação de um trecho, insira a citação inline logo após o trecho utilizado, \
 usando o número correspondente entre colchetes — por exemplo: "a taxa foi mantida em 15% a.a.[1]".
+- Se usar informações de dois trechos na mesma frase, cite ambos separadamente: "...[1][2]". \
+Nunca use vírgula entre citações (não escreva "[1, 2]", escreva "[1][2]").
 - Um mesmo número pode aparecer mais de uma vez se você usar aquele trecho em vários pontos.
 - Não gere uma seção de referências no final da resposta — ela será adicionada automaticamente.
 - Se o contexto não contiver informação suficiente para responder, diga isso explicitamente.
