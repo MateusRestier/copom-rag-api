@@ -148,8 +148,25 @@ async def ask(
     try:
         result = app.state.service.answer(question=request.question, filters=filters)
     except Exception as exc:
-        logger.exception("Error generating answer: %s", exc)
-        raise HTTPException(status_code=500, detail="Internal error while generating answer.")
+        exc_str = str(exc)
+        if "429" in exc_str or "RESOURCE_EXHAUSTED" in exc_str:
+            logger.warning("Gemini rate limit hit on /ask: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "O limite diario de requisicoes da API de embeddings foi atingido. "
+                    "O servico sera restabelecido automaticamente a meia-noite (UTC). "
+                    "Tente novamente mais tarde."
+                ),
+            )
+        if "database" in exc_str.lower() or "connection" in exc_str.lower() or "psycopg" in exc_str.lower():
+            logger.exception("Database error on /ask: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Erro de conexao com o banco de dados. Tente novamente em alguns instantes.",
+            )
+        logger.exception("Unexpected error on /ask: %s", exc)
+        raise HTTPException(status_code=500, detail="Erro interno ao gerar a resposta. Tente novamente.")
 
     return AskResponse(
         answer=result.answer,
