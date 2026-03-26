@@ -110,6 +110,11 @@ app = FastAPI(
 #  Endpoints
 # ──────────────────────────────────────────────────────────────────
 
+@app.head("/health", tags=["meta"])
+async def health_head() -> None:
+    """HEAD support for uptime monitors."""
+    return None
+
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
 async def health() -> HealthResponse:
     """Return service health status."""
