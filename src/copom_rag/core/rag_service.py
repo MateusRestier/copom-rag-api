@@ -181,14 +181,14 @@ class CopomRAGService:
         approx_tokens = 0
         budget = self._config.max_context_tokens
 
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks, start=1):
             # Rough estimate: 1 token ≈ 4 chars
             chunk_tokens = max(1, len(chunk.chunk_text) // 4)
             if approx_tokens + chunk_tokens > budget:
                 break
             date_str = chunk.meeting_date.isoformat() if chunk.meeting_date else "data desconhecida"
             parts.append(
-                f"### {chunk.title} ({chunk.doc_type}, {date_str})\n{chunk.chunk_text}"
+                f"### [{i}] {chunk.title} ({chunk.doc_type}, {date_str})\n{chunk.chunk_text}"
             )
             approx_tokens += chunk_tokens
 

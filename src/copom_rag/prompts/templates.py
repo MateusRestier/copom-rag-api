@@ -20,11 +20,15 @@ ANSWER_GENERATION_TEMPLATE = """\
 {question}
 
 ## Contexto — trechos relevantes das atas e comunicados do Copom
+Cada trecho está identificado com um número entre colchetes, por exemplo [1], [2].
 {context}
 
 ## Instruções
 - Responda à pergunta acima usando APENAS as informações do contexto fornecido.
-- Cite os documentos de origem quando relevante (ex: "conforme a ata da reunião de março de 2024").
+- Sempre que usar uma informação de um trecho, insira a citação inline logo após o trecho utilizado, \
+usando o número correspondente entre colchetes — por exemplo: "a taxa foi mantida em 15% a.a.[1]".
+- Um mesmo número pode aparecer mais de uma vez se você usar aquele trecho em vários pontos.
+- Não gere uma seção de referências no final da resposta — ela será adicionada automaticamente.
 - Se o contexto não contiver informação suficiente para responder, diga isso explicitamente.
 - Seja objetivo e preciso. Use linguagem formal adequada ao tema.
 """
